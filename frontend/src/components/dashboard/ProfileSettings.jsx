@@ -13,7 +13,7 @@ export default function ProfileSettings({ type }) {
     email: user?.email || '',
     phone: user?.phone || '',
     city: 'Addis Ababa',
-    bio: type === 'owner' ? 'Property owner on Alpha Rent Ethiopia.' : '',
+    bio: type === 'owner' ? 'Property owner on Alpha Rental Platform.' : '',
   })
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
@@ -105,7 +105,6 @@ export default function ProfileSettings({ type }) {
         <div className="mt-4 space-y-2">
           {row('Account type', user?.role === 'owner' ? 'Property owner' : 'Tenant', 'user-check')}
           {row('Member since', 'January 2024', 'calendar')}
-          {row('Email verified', 'Yes', 'check-circle')}
           {row('Phone verified', 'Yes', 'phone')}
         </div>
         <button

@@ -15,6 +15,9 @@ import {
   rejectRentalRequest,
   getAdminViewings,
   getAdminAgreements,
+  getAdminRentalExpirations,
+  markRentalExpired,
+  updateExpiredRentalPropertyAvailability,
   updateAdminUser,
 } from '../controllers/adminController.js'
 import { protect, requireRole } from '../middleware/auth.js'
@@ -60,6 +63,13 @@ router.put(
   rejectRentalRequest,
 )
 router.get('/viewings', getAdminViewings)
+router.get('/expirations', getAdminRentalExpirations)
 router.get('/agreements', getAdminAgreements)
+router.put('/agreements/:id/expire', markRentalExpired)
+router.put(
+  '/agreements/:id/property-availability',
+  validateBody({ status: { required: true, enum: ['available', 'unavailable'] } }),
+  updateExpiredRentalPropertyAvailability,
+)
 
 export default router

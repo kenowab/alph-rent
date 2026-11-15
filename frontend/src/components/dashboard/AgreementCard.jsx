@@ -1,15 +1,19 @@
+import { useState } from 'react'
 import PropTypes from 'prop-types'
 import Icon from '../ui/Icon'
 import { formatPrice, formatDate, timeAgo } from '../../utils/format'
+import AgreementDetailsModal from './AgreementDetailsModal'
 
 const STATUS_STYLES = {
   draft: { label: 'Draft — awaiting signature', className: 'bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300', icon: 'edit' },
   active: { label: 'Active', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300', icon: 'check-circle' },
   completed: { label: 'Completed', className: 'bg-primary-50 text-primary-700 dark:bg-slate-800 dark:text-primary-400', icon: 'check' },
   cancelled: { label: 'Cancelled', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', icon: 'x' },
+  expired: { label: 'Expired', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', icon: 'clock' },
 }
 
 export default function AgreementCard({ agreement, onUpdateStatus, tenantView = false }) {
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const status = STATUS_STYLES[agreement.status] || STATUS_STYLES.draft
   const property = agreement.property || {}
   const otherParty = tenantView ? agreement.owner?.name : agreement.tenant?.name
@@ -61,6 +65,14 @@ export default function AgreementCard({ agreement, onUpdateStatus, tenantView = 
         )}
       </div>
 
+      <button
+        type="button"
+        onClick={() => setDetailsOpen(true)}
+        className="btn-outline mt-4 w-full"
+      >
+        <Icon name="file-text" size={16} /> View agreement details
+      </button>
+
       {onUpdateStatus && (
         <div className="mt-4 flex gap-2">
           {agreement.status === 'draft' && (
@@ -92,6 +104,11 @@ export default function AgreementCard({ agreement, onUpdateStatus, tenantView = 
           )}
         </div>
       )}
+
+      <AgreementDetailsModal
+        agreementId={detailsOpen ? agreement.id : null}
+        onClose={() => setDetailsOpen(false)}
+      />
     </div>
   )
 }

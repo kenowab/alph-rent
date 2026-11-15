@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext'
 import { getCategoryLabel } from '../components/property/helpers'
 import { formatPrice, formatRent, formatDate } from '../utils/format'
 import { useRent } from '../context/RentContext'
+import { useLanguage } from '../context/LanguageContext'
 import { mapEmbedUrl, mapViewUrl, propertyCoords } from '../utils/images'
 
 const FACTS = [
@@ -37,6 +38,7 @@ export default function PropertyDetailsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { period, setPeriod } = useRent()
+  const { t } = useLanguage()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -67,8 +69,21 @@ export default function PropertyDetailsPage() {
           setLoading(false)
         }
       })
+
+    const handleFocus = () => {
+      fetchPropertyById(id)
+        .then(({ data }) => {
+          if (!cancelled && data) setProperty(data)
+        })
+        .catch((error) => {
+          if (!cancelled) console.error('[WARN] Could not refresh property availability:', error)
+        })
+    }
+    window.addEventListener('focus', handleFocus)
+
     return () => {
       cancelled = true
+      window.removeEventListener('focus', handleFocus)
     }
   }, [id])
 
@@ -93,8 +108,19 @@ export default function PropertyDetailsPage() {
     )
   }
 
-  const owner = property.owner || {}
-  const coords = propertyCoords(property)
+  const owner = property?.owner || {}
+  const coords = property ? propertyCoords(property) : null
+
+  const refreshAvailability = async () => {
+    try {
+      const { data } = await fetchPropertyById(id)
+      if (data) setProperty(data)
+      return data
+    } catch {
+      toast.error('Could not refresh property availability.')
+      return null
+    }
+  }
 
   const handleShare = async () => {
     try {
@@ -140,9 +166,13 @@ export default function PropertyDetailsPage() {
               <span className="badge bg-amber-500 text-white font-bold uppercase">
                 <Icon name="clock" size={12} /> PENDING
               </span>
-            ) : (
+            ) : property.status === 'available' ? (
               <span className="badge bg-emerald-600 text-white font-bold uppercase">
                 <Icon name="check-circle" size={12} /> AVAILABLE
+              </span>
+            ) : (
+              <span className="badge bg-slate-100 text-slate-600 font-bold uppercase dark:bg-slate-800 dark:text-slate-300">
+                <Icon name="x-circle" size={12} /> UNAVAILABLE
               </span>
             )}
           </div>
@@ -282,21 +312,32 @@ export default function PropertyDetailsPage() {
                 <div className="rounded-xl bg-slate-100 p-4 text-center dark:bg-slate-800">
                   <p className="flex items-center justify-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
                     <Icon name="info" size={18} className="text-amber-500" />
-                    Property Rented
+                    {t('alreadyRentedTitle')}
                   </p>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    This property has been rented and is no longer receiving applications or viewing requests.
+                    {t('alreadyRentedMessage')}
                   </p>
+                  <Link to="/properties" className="btn-primary mt-4 w-full">
+                    {t('browseAvailableHouses')}
+                  </Link>
                 </div>
               ) : property.status === 'pending' ? (
                 <div className="rounded-xl bg-amber-50 p-4 text-center dark:bg-slate-800">
                   <p className="flex items-center justify-center gap-1.5 font-bold text-amber-700 dark:text-amber-300">
                     <Icon name="clock" size={18} />
-                    Application in review
+                    {t('propertyPendingTitle')}
                   </p>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    This property is no longer accepting applications or viewing requests.
+                    {t('propertyPendingMessage')}
                   </p>
+                </div>
+              ) : property.status !== 'available' ? (
+                <div className="rounded-xl bg-slate-100 p-4 text-center dark:bg-slate-800">
+                  <p className="font-bold text-slate-800 dark:text-slate-200">{t('propertyUnavailableTitle')}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('propertyUnavailableMessage')}</p>
+                  <Link to="/properties" className="btn-primary mt-4 w-full">
+                    {t('browseAvailableHouses')}
+                  </Link>
                 </div>
               ) : (
                 <>
@@ -315,7 +356,9 @@ export default function PropertyDetailsPage() {
                       type="button"
                       onClick={() => {
                         if (!user) return navigate('/login')
-                        setBookingOpen(true)
+                        refreshAvailability().then((latest) => {
+                          if (latest?.status === 'available') setBookingOpen(true)
+                        })
                       }}
                       className="btn-accent w-full"
                     >
@@ -390,6 +433,7 @@ export default function PropertyDetailsPage() {
         onClose={() => setBookingOpen(false)}
         property={property}
         onSuccess={() => navigate('/dashboard/tenant')}
+        onUnavailable={refreshAvailability}
       />
       <ViewingModal open={viewingOpen} onClose={() => setViewingOpen(false)} property={property} />
       <ConversationModal open={contactOpen} onClose={() => setContactOpen(false)} property={property} />

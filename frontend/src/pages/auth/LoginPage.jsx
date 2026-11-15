@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import AuthLayout from '../../components/auth/AuthLayout'
 import Icon from '../../components/ui/Icon'
 import Spinner from '../../components/ui/Spinner'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import GoogleButton from '../../components/auth/GoogleButton'
+import { resendEmail } from '../../api/auth'
 
 const ROLES = [
   { id: 'tenant', label: 'Tenant', icon: 'key' },
@@ -16,7 +16,7 @@ const ROLES = [
 const SUBTITLES = {
   tenant: 'Sign in to manage your rental activity and saved properties.',
   owner: 'Sign in to manage your listings, requests and messages.',
-  admin: 'Restricted access — authorized Alpha Rent administrators only.',
+  admin: 'Restricted access — authorized Alpha Rental Platform administrators only.',
 }
 
 export default function LoginPage() {
@@ -28,17 +28,48 @@ export default function LoginPage() {
   const [role, setRole] = useState('tenant')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
+  const [resendError, setResendError] = useState('')
   const [form, setForm] = useState({
     email: '',
     password: '',
   })
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    if (location.state?.passwordResetMessage) {
+      toast.success(location.state.passwordResetMessage)
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [location.pathname, location.state, navigate, toast])
+
   const isAdmin = role === 'admin'
 
   const set = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }))
     setError('')
+    if (key === 'email') {
+      setResendMessage('')
+      setResendError('')
+    }
+  }
+
+  const handleResendEmail = async () => {
+    setResendLoading(true)
+    setResendMessage('')
+    setResendError('')
+    try {
+      const result = await resendEmail({ email: form.email.trim() })
+      const message = result.message || 'A fresh welcome email has been sent.'
+      setResendMessage(message)
+      toast.success(message)
+    } catch (err) {
+      setResendError(err.message || 'Could not resend the welcome email. Please try again.')
+      toast.error(err.message || 'Could not resend the welcome email. Please try again.')
+    } finally {
+      setResendLoading(false)
+    }
   }
 
   const selectRole = (next) => {
@@ -51,9 +82,7 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     try {
-      // The backend decides the real role from the database — the selected tab
-      // below is only a UI hint and is never sent to the API.
-      const session = await login(form)
+      const session = await login({ ...form, role })
       const requested = location.state?.from
       const roleHome =
         session.user.role === 'owner'
@@ -120,18 +149,6 @@ export default function LoginPage() {
         </div>
       )}
 
-      {!isAdmin && (
-        <>
-          <GoogleButton role={role} />
-
-          <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">or sign in with email</span>
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          </div>
-        </>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="label" htmlFor="login-email">Email address</label>
@@ -150,9 +167,9 @@ export default function LoginPage() {
         <div>
           <div className="flex items-center justify-between">
             <label className="label" htmlFor="login-password">Password</label>
-            <button type="button" className="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+            <Link to="/forgot-password" className="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
               Forgot password?
-            </button>
+            </Link>
           </div>
           <div className="relative">
             <input
@@ -193,6 +210,21 @@ export default function LoginPage() {
           {loading ? 'Signing in...' : isAdmin ? 'Admin Login' : 'Sign in'}
         </button>
       </form>
+
+      {!isAdmin && (
+        <div className="mt-5 space-y-3 text-center">
+          <button
+            type="button"
+            onClick={handleResendEmail}
+            disabled={!form.email.trim() || resendLoading}
+            className="text-sm font-semibold text-primary-600 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-primary-400"
+          >
+            {resendLoading ? 'Sending welcome email…' : 'Resend welcome email'}
+          </button>
+          {resendMessage && <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">{resendMessage}</p>}
+          {resendError && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{resendError}</p>}
+        </div>
+      )}
     </AuthLayout>
   )
 }

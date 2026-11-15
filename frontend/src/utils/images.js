@@ -24,8 +24,6 @@ const ICON_PATHS = {
     'M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm7 3h4a1 1 0 0 1 0 2h-4a1 1 0 0 1 0-2z',
   shop:
     'M4 9l1-5h14l1 5M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9M4 9h16M9 21v-6h6v6',
-  warehouse:
-    'M3 20V8l9-4 9 4v12M3 12h18M3 16h18M8 20v-4M12 20v-4M16 20v-4',
   bed: 'M3 7h11v7H3M14 10h4a3 3 0 0 1 3 3v1H14M7 12a2 2 0 1 1 4 0 2 2 0 0 1-4 0z',
 }
 
@@ -38,7 +36,7 @@ export function placeholderSvg({
 }) {
   const [c1, c2] = GRADIENTS[seed % GRADIENTS.length]
   const path = ICON_PATHS[category] || ICON_PATHS.apartment
-  const title = label || 'Alpha Rent Ethiopia'
+  const title = label || 'Alpha Rental Platform'
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 800 600">
   <defs>
@@ -61,7 +59,7 @@ export function placeholderSvg({
     <path d="${path}"/>
   </g>
   <text x="400" y="420" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" fill="#ffffff">${title}</text>
-  <text x="400" y="460" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" fill="rgba(255,255,255,0.8)">Alpha Rent Ethiopia</text>
+  <text x="400" y="460" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" fill="rgba(255,255,255,0.8)">Alpha Rental Platform</text>
 </svg>`
 }
 

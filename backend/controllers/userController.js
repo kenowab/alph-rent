@@ -71,6 +71,15 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   if (bio !== undefined) update.bio = bio.slice(0, 500)
 
   if (req.user.role === 'admin' && req.body.role && ['tenant', 'owner', 'admin'].includes(req.body.role)) {
+    if (req.body.role === 'admin' && user.role !== 'admin') {
+      const existingAdminCount = await User.countDocuments({ role: 'admin' })
+      if (existingAdminCount >= 1) {
+        throw new AppError('Only one admin person is allowed on Alpha Rent Ethiopia', 400)
+      }
+    }
+    if (user.role === 'admin' && req.body.role !== 'admin') {
+      throw new AppError('Cannot demote the single platform admin account', 400)
+    }
     update.role = req.body.role
   }
 

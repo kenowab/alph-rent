@@ -61,8 +61,11 @@ const clearSession = () => {
   }
 }
 
-export async function login({ email, password }) {
-  const { data } = await apiClient('/auth/login', { method: 'POST', body: { email, password } })
+export async function login({ email, password, role }) {
+  const { data } = await apiClient('/auth/login', {
+    method: 'POST',
+    body: { email, password, role },
+  })
   writeSession(data)
   return { data }
 }
@@ -95,6 +98,28 @@ export async function completeGoogleLogin(token) {
 }
 
 /** Fetches the authenticated user's profile from the database by token. */
+export async function resendEmail({ email, name, role }) {
+  const { data, message } = await apiClient('/auth/resend-email', {
+    method: 'POST',
+    body: { email, name, role },
+  })
+  return { data, message }
+}
+
+export async function requestPasswordReset(email) {
+  return apiClient('/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+  })
+}
+
+export async function resetPassword({ token, password }) {
+  return apiClient('/auth/reset-password', {
+    method: 'POST',
+    body: { token, password },
+  })
+}
+
 export async function getMe() {
   const { data } = await apiClient('/auth/me')
   return { data }

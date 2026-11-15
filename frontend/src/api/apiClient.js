@@ -36,12 +36,19 @@ export async function apiClient(endpoint, { method = 'GET', body, params } = {})
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
   if (!isFormData) headers['Content-Type'] = 'application/json'
 
-  const response = await fetch(url.toString(), {
-    method,
-    headers,
-    cache: 'no-store',
-    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
-  })
+  let response
+  try {
+    response = await fetch(url.toString(), {
+      method,
+      headers,
+      cache: 'no-store',
+      body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
+    })
+  } catch (err) {
+    throw new Error(
+      'Cannot connect to backend server at http://localhost:5000. Please start the backend with "npm run dev" inside the backend folder.',
+    )
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}))

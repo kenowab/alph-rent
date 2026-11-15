@@ -41,8 +41,8 @@ const rentalAgreementSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'active', 'completed', 'cancelled'],
-      default: 'active',
+      enum: ['draft', 'active', 'completed', 'cancelled', 'expired'],
+      default: 'draft',
       index: true,
     },
     terms: {
@@ -74,6 +74,24 @@ const rentalAgreementSchema = new mongoose.Schema(
     },
   },
 )
+
+rentalAgreementSchema.index(
+  { property: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: 'active' },
+    name: 'unique_active_rental_per_property',
+  },
+)
+rentalAgreementSchema.index(
+  { application: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { application: { $type: 'objectId' } },
+    name: 'unique_agreement_per_rental_request',
+  },
+)
+rentalAgreementSchema.index({ status: 1, endDate: 1 })
 
 const RentalAgreement = mongoose.model('RentalAgreement', rentalAgreementSchema)
 export default RentalAgreement

@@ -142,7 +142,7 @@ export default function ListingPage() {
           {resultTitle}
         </h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-          {loading ? 'Searching...' : `${properties.length} rental listings available`}
+          {loading ? 'Searching...' : `${properties.length} properties found`}
         </p>
       </div>
 

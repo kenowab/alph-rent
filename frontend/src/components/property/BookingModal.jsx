@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 import { sendRentalRequest } from '../../api/interactions'
 import { formatPrice } from '../../utils/format'
 
-export default function BookingModal({ open, onClose, property, onSuccess }) {
+export default function BookingModal({ open, onClose, property, onSuccess, onUnavailable }) {
   const toast = useToast()
   const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
@@ -45,6 +45,10 @@ export default function BookingModal({ open, onClose, property, onSuccess }) {
       onSuccess?.()
       onClose()
     } catch (err) {
+      if (err.status === 409) {
+        onClose()
+        onUnavailable?.(err)
+      }
       toast.error(err.message || 'Could not submit your application. Please try again.')
     } finally {
       setSubmitting(false)
@@ -202,4 +206,5 @@ BookingModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   property: PropTypes.object.isRequired,
   onSuccess: PropTypes.func,
+  onUnavailable: PropTypes.func,
 }

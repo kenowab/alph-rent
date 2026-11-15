@@ -7,6 +7,16 @@ import Notification from '../models/Notification.js'
 import { AppError } from '../utils/AppError.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { isObjectId } from '../middleware/validate.js'
+import {
+  approveRentalRequestById,
+  synchronizeActiveRentalProperties,
+} from '../utils/rentalWorkflow.js'
+
+function isValidDateOnly(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
 
 /**
  * GET /api/admin/dashboard
@@ -28,6 +38,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     cancelledRentals,
     totalViewings,
     totalAgreements,
+    activeAgreements,
   ] = await Promise.all([
     User.countDocuments(),
     User.countDocuments({ role: 'owner' }),
@@ -43,6 +54,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     RentalRequest.countDocuments({ status: 'cancelled' }),
     ViewingRequest.countDocuments(),
     RentalAgreement.countDocuments(),
+    RentalAgreement.countDocuments({ status: 'active' }),
   ])
 
   res.status(200).json({
@@ -62,6 +74,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
       cancelledRentals,
       totalViewings,
       totalAgreements,
+      activeAgreements,
     },
   })
 })
@@ -149,14 +162,26 @@ export const approveProperty = asyncHandler(async (req, res) => {
     throw new AppError('Invalid property id', 400)
   }
 
-  const property = await Property.findById(id)
-  if (!property) {
+  const currentProperty = await Property.findById(id).select('status')
+  if (!currentProperty) {
     throw new AppError('Property not found', 404)
   }
 
-  property.approvalStatus = 'approved'
-  property.rejectionReason = ''
-  await property.save()
+  const update = {
+    approvalStatus: 'approved',
+    rejectionReason: '',
+  }
+  if (currentProperty.status === 'pending') {
+    update.status = 'available'
+  }
+  const property = await Property.findOneAndUpdate(
+    { _id: id, approvalStatus: 'pending' },
+    { $set: update },
+    { new: true, runValidators: true },
+  )
+  if (!property) {
+    throw new AppError('This property approval status has already changed.', 409)
+  }
 
   if (property.owner) {
     await Notification.create({
@@ -316,10 +341,7 @@ export const getAdminRentalRequests = asyncHandler(async (req, res) => {
 /**
  * PUT /api/admin/rental-requests/:id/approve
  * Requires: Bearer token + role === 'admin'
- * Approves a pending tenant rental request. Follows the existing rental
- * business logic: the property moves into PENDING (a rental process is now
- * active) and a draft agreement is created — the property becomes RENTED once
- * the owner activates that agreement.
+ * Approves a pending request atomically with its property and agreement.
  */
 export const approveRentalRequest = asyncHandler(async (req, res) => {
   const { id } = req.params
@@ -327,59 +349,15 @@ export const approveRentalRequest = asyncHandler(async (req, res) => {
     throw new AppError('Invalid rental request id', 400)
   }
 
-  const request = await RentalRequest.findById(id).populate(
-    'property',
-    'title owner price status approvalStatus',
-  )
-  if (!request) {
-    throw new AppError('Rental request not found', 404)
-  }
-  if (request.status !== 'pending') {
-    throw new AppError(`This rental request has already been ${request.status}`, 400)
-  }
-
-  const property = request.property
-  if (!property) {
-    throw new AppError('The property for this request no longer exists', 404)
-  }
-  if (property.status === 'rented') {
-    throw new AppError('This property is already rented and cannot be approved again', 400)
-  }
-
-  request.status = 'approved'
-  request.rejectionReason = ''
-  await request.save()
-
-  if (request.tenant) {
-    await Notification.create({
-      user: request.tenant,
-      type: 'request',
-      title: 'Application approved',
-      body: 'Your rental request has been approved by Admin.',
-      property: property._id || null,
-      actor: req.user.id,
-    })
-  }
-
-  // Existing business logic: mark the property PENDING and create a draft
-  // agreement. The property is marked RENTED once the owner activates it.
-  await Property.findByIdAndUpdate(property._id, { status: 'pending' })
-  const existingAgreement = await RentalAgreement.findOne({ application: request._id })
-  if (!existingAgreement) {
-    const today = new Date()
-    const oneYearLater = new Date(today)
-    oneYearLater.setFullYear(today.getFullYear() + 1)
-    await RentalAgreement.create({
-      property: property._id,
-      owner: property.owner || request.owner || null,
-      tenant: request.tenant,
-      application: request._id,
-      monthlyRent: property.price,
-      startDate: request.startDate || request.moveInDate || today.toISOString().split('T')[0],
-      endDate: request.endDate || oneYearLater.toISOString().split('T')[0],
-      status: 'draft',
-    })
-  }
+  const request = await approveRentalRequestById(id)
+  await Notification.create({
+    user: request.tenant,
+    type: 'request',
+    title: 'Application approved',
+    body: 'Your rental request has been approved by Admin.',
+    property: request.property,
+    actor: req.user.id,
+  })
 
   const data = await RentalRequest.findById(request.id)
     .populate('property', 'title subArea city price status category images')
@@ -409,11 +387,16 @@ export const rejectRentalRequest = asyncHandler(async (req, res) => {
     throw new AppError(`This rental request has already been ${request.status}`, 400)
   }
 
-  request.status = 'rejected'
-  request.rejectionReason = reason
-  await request.save()
+  const updatedRequest = await RentalRequest.findOneAndUpdate(
+    { _id: id, status: 'pending' },
+    { $set: { status: 'rejected', rejectionReason: reason } },
+    { new: true },
+  ).populate('property', 'title owner')
+  if (!updatedRequest) {
+    throw new AppError('This rental request has already been decided.', 409)
+  }
 
-  if (request.tenant) {
+  if (updatedRequest.tenant) {
     const body = reason
       ? `Your rental request has been declined by Admin. Reason: ${reason}`
       : 'Your rental request has been declined by Admin.'
@@ -422,12 +405,12 @@ export const rejectRentalRequest = asyncHandler(async (req, res) => {
       type: 'request',
       title: 'Application declined',
       body,
-      property: request.property?._id || null,
+      property: updatedRequest.property?._id || null,
       actor: req.user.id,
     })
   }
 
-  const data = await RentalRequest.findById(request.id)
+  const data = await RentalRequest.findById(updatedRequest.id)
     .populate('property', 'title subArea city price status category images')
     .populate('tenant', 'name email phone')
     .populate('owner', 'name email phone')
@@ -461,14 +444,19 @@ export const updateAdminUser = asyncHandler(async (req, res) => {
     throw new AppError('User not found', 404)
   }
 
+  // Enforce single admin policy: only one admin person is allowed on the platform
+  if (role === 'admin' && target.role !== 'admin') {
+    const adminCount = await User.countDocuments({ role: 'admin' })
+    if (adminCount >= 1) {
+      throw new AppError('Only one admin person is allowed on Alpha Rent Ethiopia', 400)
+    }
+  }
+
   const willDemote = role !== undefined && role !== 'admin'
   const willDeactivate = active === false
   const removesAdmin = target.role === 'admin' && (willDemote || willDeactivate)
   if (removesAdmin) {
-    const adminCount = await User.countDocuments({ role: 'admin', active: true })
-    if (adminCount <= 1) {
-      throw new AppError('Cannot remove the last active admin account', 400)
-    }
+    throw new AppError('Cannot remove or demote the single platform admin account', 400)
   }
 
   if (active !== undefined) update.active = active
@@ -513,10 +501,174 @@ export const getAdminViewings = asyncHandler(async (req, res) => {
  * GET /api/admin/agreements
  */
 export const getAdminAgreements = asyncHandler(async (req, res) => {
+  await synchronizeActiveRentalProperties()
+
   const data = await RentalAgreement.find()
-    .populate('property', 'title city price status')
+    .populate('property', 'title description category address subArea city price images status')
     .populate('owner', 'name email phone')
     .populate('tenant', 'name email phone')
+    .populate('application')
     .sort({ createdAt: -1 })
   res.status(200).json({ success: true, data })
+})
+
+/**
+ * GET /api/admin/expirations
+ * Active agreements with an end date and previously expired agreements.
+ */
+export const getAdminRentalExpirations = asyncHandler(async (req, res) => {
+  await synchronizeActiveRentalProperties()
+
+  const data = await RentalAgreement.find({
+    status: { $in: ['active', 'expired'] },
+    endDate: { $gt: '' },
+  })
+    .populate('property', 'title address subArea city status approvalStatus')
+    .populate('owner', 'name email phone')
+    .populate('tenant', 'name email phone')
+    .sort({ endDate: 1, createdAt: -1 })
+
+  res.status(200).json({ success: true, data })
+})
+
+/**
+ * PUT /api/admin/agreements/:id/expire
+ * Expiration is an explicit admin action; it never changes property availability.
+ */
+export const markRentalExpired = asyncHandler(async (req, res) => {
+  const { id } = req.params
+  if (!isObjectId(id)) {
+    throw new AppError('Invalid agreement id', 400)
+  }
+
+  const agreement = await RentalAgreement.findById(id)
+  if (!agreement) {
+    throw new AppError('Rental agreement not found', 404)
+  }
+  if (agreement.status !== 'active') {
+    throw new AppError('Only active rental agreements can be marked as expired.', 409)
+  }
+  if (!isValidDateOnly(agreement.endDate)) {
+    throw new AppError('This rental agreement does not have a valid end date.', 400)
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  if (agreement.endDate >= today) {
+    throw new AppError('The rental end date must have passed before it can be expired.', 400)
+  }
+  if (!agreement.tenant || !agreement.owner) {
+    throw new AppError('This rental agreement is missing its tenant or owner.', 409)
+  }
+
+  const expiredAgreement = await RentalAgreement.findOneAndUpdate(
+    {
+      _id: agreement._id,
+      status: 'active',
+      endDate: { $eq: agreement.endDate, $lt: today },
+    },
+    { $set: { status: 'expired' } },
+    { new: true, runValidators: true },
+  )
+  if (!expiredAgreement) {
+    throw new AppError('The rental agreement changed before it could be expired. Refresh and try again.', 409)
+  }
+
+  const propertyId = agreement.property?._id || agreement.property
+  const property = await Property.findById(propertyId).select('title')
+  const propertyTitle = property?.title || 'your rental property'
+  const body = `The rental agreement for "${propertyTitle}" has been marked as expired by an administrator.`
+  await Notification.create([
+    {
+      user: agreement.tenant,
+      type: 'agreement',
+      title: 'Rental agreement expired',
+      body,
+      property: propertyId,
+      actor: req.user.id,
+    },
+    {
+      user: agreement.owner,
+      type: 'agreement',
+      title: 'Rental agreement expired',
+      body,
+      property: propertyId,
+      actor: req.user.id,
+    },
+  ])
+
+  const data = await RentalAgreement.findById(expiredAgreement._id)
+    .populate('property', 'title address subArea city status approvalStatus')
+    .populate('owner', 'name email phone')
+    .populate('tenant', 'name email phone')
+  res.status(200).json({ success: true, data })
+})
+
+/**
+ * PUT /api/admin/agreements/:id/property-availability
+ * Property readiness is reviewed separately after the agreement expires.
+ */
+export const updateExpiredRentalPropertyAvailability = asyncHandler(async (req, res) => {
+  const { id } = req.params
+  const { status } = req.body
+  if (!isObjectId(id)) {
+    throw new AppError('Invalid agreement id', 400)
+  }
+  if (!['available', 'unavailable'].includes(status)) {
+    throw new AppError('Property status must be available or unavailable.', 400)
+  }
+
+  const agreement = await RentalAgreement.findById(id)
+  if (!agreement) {
+    throw new AppError('Rental agreement not found', 404)
+  }
+  if (agreement.status !== 'expired') {
+    throw new AppError('Property availability can only be reviewed after a rental expires.', 409)
+  }
+
+  const propertyId = agreement.property?._id || agreement.property
+  const property = await Property.findById(propertyId)
+  if (!property) {
+    throw new AppError('Property not found', 404)
+  }
+
+  if (status === 'available') {
+    if (property.approvalStatus !== 'approved') {
+      throw new AppError('Only an approved property can be made available.', 409)
+    }
+    const [activeAgreement, otherApprovedRequest] = await Promise.all([
+      RentalAgreement.exists({
+        property: propertyId,
+        status: 'active',
+        _id: { $ne: agreement._id },
+      }),
+      RentalRequest.exists({
+        property: propertyId,
+        status: 'approved',
+        ...(agreement.application ? { _id: { $ne: agreement.application } } : {}),
+      }),
+    ])
+    if (activeAgreement || otherApprovedRequest) {
+      throw new AppError('This property has another active or approved rental and cannot be made available.', 409)
+    }
+  }
+
+  const update = await Property.findOneAndUpdate(
+    status === 'available'
+      ? {
+          _id: propertyId,
+          approvalStatus: 'approved',
+          status: { $in: ['rented', 'unavailable', 'available'] },
+        }
+      : { _id: propertyId },
+    { $set: { status } },
+    { new: true, runValidators: true },
+  )
+  if (!update) {
+    throw new AppError('Property availability could not be updated. Refresh and try again.', 409)
+  }
+
+  res.status(200).json({
+    success: true,
+    data: { agreementId: agreement.id, property: update },
+  })
 })

@@ -136,11 +136,6 @@ const IMAGES = {
     IMG('shop-3.jpg'),
     IMG('shop-4.jpg'),
   ],
-  warehouse: [
-    IMG('warehouse-1.jpg'),
-    IMG('warehouse-2.jpg'),
-    IMG('warehouse-3.jpg'),
-  ],
 }
 const E = IMAGES.apartmentExterior
 const H = IMAGES.houseExterior
@@ -151,7 +146,6 @@ const BT = IMAGES.bathroom
 const OF = IMAGES.office
 const L = IMAGES.land
 const SH = IMAGES.shop
-const WH = IMAGES.warehouse
 
 const PROPERTY_SEED = [
   P({
@@ -262,17 +256,6 @@ const PROPERTY_SEED = [
     owner: MOCK_OWNERS[3],
     description: 'A prime retail shop on the ground floor of a busy commercial building in Piassa. High foot traffic, ideal for clothing, electronics or food retail. Includes one restroom and shared security.',
     images: [SH[0], SH[1], SH[2], SH[3]],
-  }),
-  P({
-    title: 'Warehouse - Modjo Dry Port Road',
-    category: 'warehouse', city: 'Adama', subArea: 'Modjo',
-    address: 'Modjo, Along Dry Port Road', price: 95000,
-    bathrooms: 2, area: 800,
-    parking: true, security: true,
-    views: 389, postedAt: new Date('2026-07-18'),
-    owner: MOCK_OWNERS[5],
-    description: 'A large warehouse of 800 sqm along the Modjo Dry Port road with easy truck access. High ceiling, loading bay, office room, restrooms and a guarded compound.',
-    images: [WH[0], WH[1], WH[2], OF[4]],
   }),
   P({
     title: 'One Bedroom Apartment, Megenagna',

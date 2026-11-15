@@ -77,6 +77,11 @@ export async function fetchRentalAgreements() {
   return { data: body.data || [] }
 }
 
+export async function fetchRentalAgreement(id) {
+  const body = await apiClient(`/agreements/${id}`)
+  return { data: body.data }
+}
+
 export async function updateAgreementStatus(id, status) {
   const body = await apiClient(`/agreements/${id}/status`, { method: 'PUT', body: { status } })
   return { data: body.data }

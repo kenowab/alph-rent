@@ -134,7 +134,7 @@ export default function OwnerDashboardPage() {
     listings: listings.length,
     requests: requests.filter((r) => r.status === 'pending').length,
     viewings: viewings.filter((v) => v.status === 'pending').length,
-    agreements: agreements.filter((a) => a.status === 'draft').length,
+    agreements: agreements.filter((a) => a.status === 'active').length,
     messages: conversations.reduce((sum, c) => sum + c.unreadCount, 0),
     notifications: notificationCount,
   }
@@ -333,7 +333,7 @@ export default function OwnerDashboardPage() {
       {activeTab === 'agreements' && (
         <div>
           <h2 className="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white">Rental agreements</h2>
-          <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">Activate an approved application to finalize the rental. The property is marked RENTED once the agreement is active.</p>
+          <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">Administrator-approved rental requests appear here as active agreements. Update an agreement when the tenancy ends or is cancelled.</p>
           {renderAgreements()}
         </div>
       )}

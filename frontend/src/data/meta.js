@@ -6,7 +6,6 @@ export const CATEGORIES = [
   { id: 'land', label: 'Land', icon: 'map' },
   { id: 'studio', label: 'Studio', icon: 'bed' },
   { id: 'shop', label: 'Shop', icon: 'store' },
-  { id: 'warehouse', label: 'Warehouse', icon: 'box' },
   { id: 'room', label: 'Room', icon: 'door' },
   { id: 'commercial', label: 'Commercial Property', icon: 'building2' },
 ]

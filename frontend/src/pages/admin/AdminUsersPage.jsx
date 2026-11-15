@@ -227,11 +227,19 @@ export default function AdminUsersPage() {
                 className="input"
                 value={pendingRole}
                 onChange={(e) => setPendingRole(e.target.value)}
+                disabled={selected.role === 'admin'}
               >
-                <option value="admin">Admin</option>
+                {selected.role === 'admin' && (
+                  <option value="admin">Admin (Platform Administrator)</option>
+                )}
                 <option value="owner">Owner</option>
                 <option value="tenant">Tenant</option>
               </select>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {selected.role === 'admin'
+                  ? 'Only 1 person is allowed as Platform Admin and cannot be demoted.'
+                  : 'Only 1 person is allowed as Admin. Tenants and owners can switch between Tenant and Owner.'}
+              </p>
             </div>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

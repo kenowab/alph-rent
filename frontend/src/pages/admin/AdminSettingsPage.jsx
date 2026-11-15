@@ -23,10 +23,10 @@ const INFO = [
       'Deactivating a user blocks them from signing in immediately. The last active admin cannot be demoted or deactivated.',
   },
   {
-    icon: 'info',
-    title: 'Adding more admins',
+    icon: 'shieldCheck',
+    title: 'Single Admin Policy',
     description:
-      'From the server folder run: npm run create:admin. You can also promote a user from the Users page in this panel.',
+      'Alpha Rental Platform strictly allows only one platform administrator account. No other user can be registered or promoted to admin.',
   },
 ]
 

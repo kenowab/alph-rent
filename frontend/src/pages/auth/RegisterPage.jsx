@@ -127,7 +127,7 @@ export default function RegisterPage() {
         password: form.password,
         role,
       })
-      toast.success('Account created — welcome to Alpha Rent Ethiopia!')
+      toast.success('Account created — welcome to Alpha Rental Platform!')
       navigate(session.user.role === 'owner' ? '/dashboard/owner' : '/dashboard/tenant', { replace: true })
     } catch (err) {
       if (err.status === 409) {
@@ -147,7 +147,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Join Alpha Rent Ethiopia in under a minute."
+      subtitle="Join Alpha Rental Platform in under a minute."
       footer={
         <>
           Already have an account?{' '}

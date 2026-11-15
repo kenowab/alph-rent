@@ -44,7 +44,7 @@ export default function RoleSelectPage() {
           <Icon name="users" size={30} />
         </span>
         <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          How will you use Alpha Rent Ethiopia?
+          How will you use Alpha Rental Platform?
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-slate-500 dark:text-slate-400">
           Choose your role to personalise your experience. You can still browse every listing no

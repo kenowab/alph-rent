@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { to: '/admin/properties', label: 'Properties', icon: 'building' },
   { to: '/admin/approvals', label: 'Property Approvals', icon: 'check-circle' },
   { to: '/admin/rental-requests', label: 'Rental Requests', icon: 'calendar' },
+  { to: '/admin/agreements', label: 'Rental Agreements', icon: 'key' },
+  { to: '/admin/expirations', label: 'Rental Expiration Management', icon: 'clock' },
   { to: '/admin/reports', label: 'Reports', icon: 'file-text' },
   { to: '/admin/settings', label: 'Settings', icon: 'settings' },
 ]

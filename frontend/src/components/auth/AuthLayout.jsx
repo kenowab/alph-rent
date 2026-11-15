@@ -18,7 +18,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
               <Icon name="bolt" size={14} className="text-brand-400" />
-              Alpha Rent Ethiopia
+              Alpha Rental Platform
             </span>
             <h2 className="mt-8 text-3xl font-extrabold leading-tight text-white">
               Your next home is one search away.
@@ -39,7 +39,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
             ))}
           </div>
 
-          <p className="text-xs text-white/50">© {new Date().getFullYear()} Alpha Rent Ethiopia</p>
+          <p className="text-xs text-white/50">© {new Date().getFullYear()} Alpha Rental Platform</p>
         </div>
       </div>
 

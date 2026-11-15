@@ -15,6 +15,16 @@ export function errorHandler(err, req, res, next) {
   let error = { ...err }
   error.message = err.message
 
+  // MongoDB/Mongoose connection failures — the database is temporarily unavailable.
+  const isMongoDbUnavailable =
+    err.name === 'MongoServerSelectionError' ||
+    err.name === 'MongooseServerSelectionError' ||
+    /connect ETIMEDOUT|timed out|topology/i.test(err.message || '')
+
+  if (isMongoDbUnavailable) {
+    error = new AppError('Database temporarily unavailable. Please try again later.', 503)
+  }
+
   // Mongoose: invalid ObjectId
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
     error = new AppError(`Resource not found (invalid id: ${err.value})`, 404)
@@ -48,6 +58,7 @@ export function errorHandler(err, req, res, next) {
 
   res.status(statusCode).json({
     success: false,
+    ...(typeof error.code === 'string' ? { code: error.code } : {}),
     message:
       statusCode >= 500 && statusCode !== 503 && !isDev
         ? 'Something went wrong on the server'

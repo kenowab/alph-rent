@@ -6,7 +6,7 @@
 
 const local = (name) => `/images/properties/${name}`
 
-// Exactly 60 local photos across different property scenes.
+// Local photos across different property scenes.
 export const PROPERTY_IMAGES = [
   // House exteriors (6)
   local('house-1.jpg'),
@@ -73,10 +73,6 @@ export const PROPERTY_IMAGES = [
   local('shop-2.jpg'),
   local('shop-3.jpg'),
   local('shop-4.jpg'),
-  // Warehouses (3)
-  local('warehouse-1.jpg'),
-  local('warehouse-2.jpg'),
-  local('warehouse-3.jpg'),
   // Commercial (1)
   local('commercial-1.jpg'),
 ]
@@ -93,8 +89,7 @@ export const IMAGES = {
   office: PROPERTY_IMAGES.slice(38, 44),
   land: PROPERTY_IMAGES.slice(44, 51),
   shop: PROPERTY_IMAGES.slice(51, 55),
-  warehouse: PROPERTY_IMAGES.slice(55, 58),
-  commercial: PROPERTY_IMAGES.slice(58, 59),
+  commercial: PROPERTY_IMAGES.slice(55, 56),
 }
 
 // Old database records reference images.unsplash.com. Map those photo ids to the
@@ -156,9 +151,6 @@ const UNSPLASH_TO_LOCAL = {
   'photo-1534452203293-494d7ddbf7e0': 'shop-2.jpg',
   'photo-1567401893414-76b7b1e5a7a5': 'shop-3.jpg',
   'photo-1604719312566-8912e9227c6a': 'shop-4.jpg',
-  'photo-1586528116311-ad8dd3c8310d': 'warehouse-1.jpg',
-  'photo-1553413077-190dd305871c': 'warehouse-2.jpg',
-  'photo-1587293852726-70cdb56c2866': 'warehouse-3.jpg',
 }
 
 // Resolves any image source to a local file when possible.

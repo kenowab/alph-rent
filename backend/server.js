@@ -4,9 +4,11 @@ import { config as loadEnv } from 'dotenv'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import mongoose from 'mongoose'
 import { connectDB, disconnectDB } from './config/database.js'
 import apiRoutes from './routes/index.js'
 import { notFound, errorHandler } from './middleware/error.js'
+import { requireDatabase } from './middleware/requireDatabase.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -30,15 +32,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // Health check
 app.get('/api/health', (req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1
+
   res.status(200).json({
     success: true,
-    message: 'Alpha Rent Ethiopia API is running',
+    message: 'Alpha Rental Platform API is running',
+    database: dbConnected ? 'connected' : 'disconnected',
     time: new Date().toISOString(),
   })
 })
 
 // API routes
-app.use('/api', apiRoutes)
+app.use('/api', requireDatabase, apiRoutes)
 
 // 404 + centralized error handling
 app.use(notFound)
@@ -55,12 +60,12 @@ const PORT = Number(process.env.PORT) || 5000
 const server = app.listen(PORT, async () => {
   try {
     await connectDB()
+    console.log(`API running on http://localhost:${PORT}`)
   } catch (err) {
-    console.error('[FATAL] Failed to connect to MongoDB:', err.message)
-    server.close(() => process.exit(1))
-    return
+    console.warn('[WARN] MongoDB unavailable. Starting API in degraded mode.')
+    console.warn(err.message)
+    console.log(`API running on http://localhost:${PORT} (MongoDB disconnected)`)
   }
-  console.log(`API running on http://localhost:${PORT}`)
 })
 
 // Graceful shutdown

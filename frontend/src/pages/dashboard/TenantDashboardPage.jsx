@@ -225,7 +225,7 @@ export default function TenantDashboardPage() {
       <EmptyState
         icon="key"
         title="No rental agreements yet"
-        description="Once an owner approves your application, your rental agreement will appear here."
+        description="Once an administrator approves your application, your active rental agreement will appear here."
       />
     ) : (
       <div className="grid gap-5 lg:grid-cols-2">

@@ -51,7 +51,7 @@ export default function HomePage() {
           className="absolute inset-0 h-full w-full object-cover"
           onError={() =>
             setHeroImage(
-              placeholderSvgUrl({ label: 'Alpha Rent Ethiopia', category: 'apartment', seed: 1 }),
+              placeholderSvgUrl({ label: 'Alpha Rental Platform', category: 'apartment', seed: 1 }),
             )
           }
         />

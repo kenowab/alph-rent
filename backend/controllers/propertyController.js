@@ -1,12 +1,15 @@
 import Property from '../models/Property.js'
+import RentalAgreement from '../models/RentalAgreement.js'
 import User from '../models/User.js'
 import jwt from 'jsonwebtoken'
 import { AppError } from '../utils/AppError.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { CITIES, normalizeCity } from '../utils/cities.js'
+import { synchronizeActiveRentalProperties } from '../utils/rentalWorkflow.js'
 import { imageUrl } from '../middleware/upload.js'
+import { isObjectId } from '../middleware/validate.js'
 
-const CATEGORY_ENUM = ['house', 'apartment', 'villa', 'office', 'land', 'studio', 'shop', 'warehouse', 'room', 'commercial']
+const CATEGORY_ENUM = ['house', 'apartment', 'villa', 'office', 'land', 'studio', 'shop', 'room', 'commercial']
 const AMENITY_FIELDS = ['furnished', 'parking', 'security', 'waterTank', 'elevator']
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -95,6 +98,8 @@ function pickPropertyFields(body) {
  * Returns: { data: [property...], total }
  */
 export const getProperties = asyncHandler(async (req, res) => {
+  await synchronizeActiveRentalProperties()
+
   const {
     category,
     q,
@@ -114,11 +119,12 @@ export const getProperties = asyncHandler(async (req, res) => {
   // Only admin-approved properties are visible to the public. Pending and
   // rejected listings must never appear in the tenant-facing results.
   query.approvalStatus = 'approved'
+  query.category = { $ne: 'warehouse' }
 
   if (status && status !== 'all') {
     query.status = status
   } else if (!status) {
-    query.status = 'available'
+    query.status = { $in: ['available', 'rented'] }
   }
 
   if (category && category !== 'all') {
@@ -214,8 +220,9 @@ export const getSearchSuggestions = asyncHandler(async (req, res) => {
   }
 
   const matches = await Property.find({
-    status: 'available',
+    status: { $in: ['available', 'rented'] },
     approvalStatus: 'approved',
+    category: { $ne: 'warehouse' },
     $or: [{ city: regex }, { subArea: regex }, { title: regex }, { address: regex }],
   })
     .select('title city subArea')
@@ -248,6 +255,12 @@ export const getMyProperties = asyncHandler(async (req, res) => {
  * Returns: { data: property }
  */
 export const getProperty = asyncHandler(async (req, res) => {
+  if (!isObjectId(req.params.id)) {
+    throw new AppError('Invalid property id', 400)
+  }
+
+  await synchronizeActiveRentalProperties(req.params.id)
+
   const property = await Property.findByIdAndUpdate(
     req.params.id,
     { $inc: { views: 1 } },
@@ -313,6 +326,7 @@ export const createProperty = asyncHandler(async (req, res) => {
 
   const property = await Property.create({
     ...fields,
+    status: 'pending',
     images,
     approvalStatus: 'pending',
     owner: user.id,
@@ -333,6 +347,10 @@ export const createProperty = asyncHandler(async (req, res) => {
  * Returns: { data: property }
  */
 export const updateProperty = asyncHandler(async (req, res) => {
+  if (!isObjectId(req.params.id)) {
+    throw new AppError('Invalid property id', 400)
+  }
+
   const property = await Property.findById(req.params.id)
   if (!property) {
     throw new AppError('Property not found', 404)
@@ -356,6 +374,18 @@ export const updateProperty = asyncHandler(async (req, res) => {
       throw new AppError(
         'This property is part of an active rental process. Cancel or complete the agreement before changing its availability.',
         400,
+      )
+    }
+    if (
+      !isAdmin &&
+      (await RentalAgreement.exists({
+        property: property._id,
+        status: { $in: ['active', 'expired'] },
+      }))
+    ) {
+      throw new AppError(
+        'Only an administrator can change availability for a property linked to an active or expired rental.',
+        403,
       )
     }
   }
@@ -387,6 +417,10 @@ export const updateProperty = asyncHandler(async (req, res) => {
  * Returns: { success: true }
  */
 export const deleteProperty = asyncHandler(async (req, res) => {
+  if (!isObjectId(req.params.id)) {
+    throw new AppError('Invalid property id', 400)
+  }
+
   const property = await Property.findById(req.params.id)
   if (!property) {
     throw new AppError('Property not found', 404)

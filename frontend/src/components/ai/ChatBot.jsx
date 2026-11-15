@@ -51,9 +51,9 @@ export default function ChatBot() {
 
   const getGreeting = () => {
     const greetings = {
-      en: "Hello! I'm Alpha Rent AI assistant. I can help you find properties, answer questions about renting, and more. How can I help you?",
-      om: "Nagaa! Alpha Rent AI gargaaraa koo dha. Qabeenya barbaaduu,wwan waa'ee kireeffamaa gahee deebisuun. Akkamitti gargaaraa danda'a?",
-      am: "ሰላም! እኔ Alpha Rent AI እርዳታ ነኝ። ንብረቶችን ለማግኘት፣ ስለ ኪራይ ጥያቄዎችን ለመልስ እና ሌሎችንም ማድረግ እችላለሁ። እንዴት ልርዳዎ?",
+      en: "Hello! I'm Alpha Rental Platform AI assistant. I can help you find properties, answer questions about renting, and more. How can I help you?",
+      om: "Nagaa! Alpha Rental Platform AI gargaaraa koo dha. Qabeenya barbaaduu,wwan waa'ee kireeffamaa gahee deebisuun. Akkamitti gargaaraa danda'a?",
+      am: "ሰላም! እኔ Alpha Rental Platform AI እርዳታ ነኝ። ንብረቶችን ለማግኘት፣ ስለ ኪራይ ጥያቄዎችን ለመልስ እና ሌሎችንም ማድረግ እችላለሁ። እንዴት ልርዳዎ?",
     }
     return greetings[language] || greetings.en
   }
@@ -134,7 +134,7 @@ export default function ChatBot() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-bold text-white">
-                {language === 'om' ? 'Alpha Rent AI' : language === 'am' ? 'Alpha Rent AI' : 'Alpha Rent AI'}
+                Alpha Rental Platform AI
               </h3>
               <p className="text-[11px] text-white/70">
                 {language === 'om'

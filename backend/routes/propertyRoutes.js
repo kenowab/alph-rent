@@ -17,7 +17,7 @@ const router = Router()
 const createSchema = {
   title: { required: true, type: 'string', min: 5 },
   description: { required: true, type: 'string', min: 20 },
-  category: { required: true, enum: ['house', 'apartment', 'villa', 'office', 'land', 'studio', 'shop', 'warehouse', 'room', 'commercial'] },
+  category: { required: true, enum: ['house', 'apartment', 'villa', 'office', 'land', 'studio', 'shop', 'room', 'commercial'] },
   city: { required: true, type: 'string' },
   subArea: { required: true, type: 'string' },
   address: { required: true, type: 'string' },

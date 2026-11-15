@@ -1,6 +1,15 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { register, login, getMe, googleAuth, googleCallback } from '../controllers/authController.js'
+import {
+  register,
+  login,
+  getMe,
+  googleAuth,
+  googleCallback,
+  resendEmail,
+  forgotPassword,
+  resetPassword,
+} from '../controllers/authController.js'
 import { protect } from '../middleware/auth.js'
 import { validateBody } from '../middleware/validate.js'
 
@@ -22,7 +31,7 @@ router.post(
     email: { required: true, type: 'email' },
     password: { required: true, type: 'string', min: 6 },
     phone: { type: 'string', max: 30 },
-    role: { enum: ['tenant', 'owner', 'admin'] },
+    role: { enum: ['tenant', 'owner'] },
   }),
   register,
 )
@@ -33,8 +42,37 @@ router.post(
   validateBody({
     email: { required: true, type: 'email' },
     password: { required: true, type: 'string' },
+    role: { enum: ['tenant', 'owner', 'admin'] },
   }),
   login,
+)
+
+router.post(
+  '/resend-email',
+  authLimiter,
+  validateBody({
+    email: { required: true, type: 'email' },
+    name: { type: 'string', min: 2 },
+    role: { enum: ['tenant', 'owner', 'admin'] },
+  }),
+  resendEmail,
+)
+
+router.post(
+  '/forgot-password',
+  authLimiter,
+  validateBody({ email: { required: true, type: 'email' } }),
+  forgotPassword,
+)
+
+router.post(
+  '/reset-password',
+  authLimiter,
+  validateBody({
+    token: { required: true, type: 'string', min: 32 },
+    password: { required: true, type: 'string', min: 6 },
+  }),
+  resetPassword,
 )
 
 router.get('/google', googleAuth)

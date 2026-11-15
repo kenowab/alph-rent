@@ -17,6 +17,7 @@ const router = Router()
 router.post(
   '/properties/:propertyId/requests',
   protect,
+  authorize('tenant'),
   validateBody({
     name: { type: 'string', max: 80 },
     phone: { type: 'string', max: 30 },

@@ -23,7 +23,7 @@ function getModel() {
   return process.env.AI_MODEL || 'gemini-3.6-flash'
 }
 
-const CATEGORIES = ['house', 'apartment', 'villa', 'office', 'land', 'studio', 'shop', 'warehouse', 'room', 'commercial']
+const CATEGORIES = ['house', 'apartment', 'villa', 'office', 'land', 'studio', 'shop', 'room', 'commercial']
 
 const SYSTEM_PROMPT = `You are the AI assistant for Alpha Rent Ethiopia â€” Ethiopia's trusted property rental marketplace. You help tenants find properties, help owners list properties, and answer general questions about the platform.
 
@@ -35,7 +35,7 @@ Key facts about Alpha Rent Ethiopia:
 - After a rental request is approved, a rental agreement can be created.
 - Users can have roles: tenant, owner, or admin.
 - The platform supports multiple languages: English, Afaan Oromo, and Amharic.
-- Property categories include: house, apartment, villa, office, land, studio, shop, warehouse, room, commercial.
+- Property categories include: house, apartment, villa, office, land, studio, shop, room, commercial.
 - Available cities include: Addis Ababa, Adama, Bahir Dar, Dire Dawa, Hawassa, Mekelle, Jimma, Gondar, Debre Markos, Harar.
 
 How rental requests work:

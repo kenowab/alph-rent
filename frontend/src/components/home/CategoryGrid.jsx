@@ -13,7 +13,6 @@ const CATEGORY_COUNTS = {
   land: '410',
   studio: '184',
   shop: '97',
-  warehouse: '45',
 }
 
 const CATEGORY_IMAGES = {
@@ -24,7 +23,6 @@ const CATEGORY_IMAGES = {
   land: '/images/properties/land-1.jpg',
   studio: '/images/properties/livingroom-3.jpg',
   shop: '/images/properties/shop-1.jpg',
-  warehouse: '/images/properties/warehouse-2.jpg',
   room: '/images/properties/bedroom-3.jpg',
   commercial: '/images/properties/commercial-1.jpg',
 }

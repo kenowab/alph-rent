@@ -5,6 +5,8 @@ import HomePage from './pages/HomePage'
 import ListingPage from './pages/ListingPage'
 import PropertyDetailsPage from './pages/PropertyDetailsPage'
 import LoginPage from './pages/auth/LoginPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import RoleSelectPage from './pages/auth/RoleSelectPage'
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage'
@@ -20,6 +22,8 @@ import AdminTenantsPage from './pages/admin/AdminTenantsPage'
 import AdminPropertiesPage from './pages/admin/AdminPropertiesPage'
 import AdminApprovalsPage from './pages/admin/AdminApprovalsPage'
 import AdminRentalRequestsPage from './pages/admin/AdminRentalRequestsPage'
+import AdminAgreementsPage from './pages/admin/AdminAgreementsPage'
+import AdminRentalExpirationsPage from './pages/admin/AdminRentalExpirationsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
@@ -42,6 +46,8 @@ export default function App() {
         <Route path="/properties" element={<ListingPage />} />
         <Route path="/properties/:id" element={<PropertyDetailsPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/register/role" element={<RoleSelectPage />} />
         <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
@@ -148,6 +154,22 @@ export default function App() {
         element={
           <ProtectedRoute role="admin">
             <AdminRentalRequestsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/agreements"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminAgreementsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/expirations"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminRentalExpirationsPage />
           </ProtectedRoute>
         }
       />

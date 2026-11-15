@@ -113,7 +113,7 @@ export default function Footer() {
           <div className="mt-6 rounded-xl border border-slate-800 bg-slate-800/50 p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-white">
               <Icon name="phone" size={16} className="text-brand-400" />
-              +251 900 000 000
+              +251 917 446 847
             </p>
             <p className="mt-1 text-xs text-slate-400">{t('supportAvailable')}</p>
           </div>
@@ -122,10 +122,10 @@ export default function Footer() {
 
       <div className="border-t border-slate-800">
         <div className="container-page flex flex-col items-center justify-between gap-3 py-6 text-xs text-slate-500 sm:flex-row">
-          <p>© {new Date().getFullYear()} Alpha Rent Ethiopia. {t('rightsReserved')}</p>
+          <p>© {new Date().getFullYear()} Alpha Rental Platform. {t('rightsReserved')}</p>
           <p className="flex items-center gap-1.5">
             {t('madeWith')} <Icon name="heart-solid" size={12} className="text-red-500" />{' '}
-            {t('inAddisAbaba')}
+            in Nekemte
           </p>
         </div>
       </div>

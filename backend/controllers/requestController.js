@@ -5,6 +5,11 @@ import Notification from '../models/Notification.js'
 import { AppError } from '../utils/AppError.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { isObjectId } from '../middleware/validate.js'
+import {
+  approveRentalRequestById,
+  rentedError,
+  synchronizeActiveRentalProperties,
+} from '../utils/rentalWorkflow.js'
 
 const STATUS_ENUM = ['pending', 'approved', 'rejected', 'contacted', 'cancelled']
 
@@ -27,16 +32,23 @@ export const createRequest = asyncHandler(async (req, res) => {
     throw new AppError('Invalid property id', 400)
   }
 
+  await synchronizeActiveRentalProperties(propertyId)
+
   const property = await Property.findById(propertyId)
   if (!property) {
     throw new AppError('Property not found', 404)
   }
 
   if (property.approvalStatus !== 'approved' || property.status !== 'available') {
+    if (property.status === 'rented') throw rentedError()
     throw new AppError(
       'This property is not available for new rental applications right now',
-      400,
+      409,
+      'PROPERTY_NOT_AVAILABLE',
     )
+  }
+  if (await RentalAgreement.exists({ property: property._id, status: 'active' })) {
+    throw rentedError()
   }
 
   const {
@@ -70,6 +82,32 @@ export const createRequest = asyncHandler(async (req, res) => {
     message,
     status: 'pending',
   })
+
+  const currentProperty = await Property.findById(property._id).select('status approvalStatus')
+  if (!currentProperty || currentProperty.approvalStatus !== 'approved' || currentProperty.status !== 'available') {
+    const { deletedCount } = await RentalRequest.deleteOne({
+      _id: request._id,
+      status: 'pending',
+    })
+    if (!deletedCount) {
+      const latestRequest = await RentalRequest.findById(request._id).select('status')
+      if (latestRequest?.status !== 'approved') {
+        if (currentProperty?.status === 'rented') throw rentedError()
+        throw new AppError(
+          'This property is no longer available for new rental applications.',
+          409,
+          'PROPERTY_NOT_AVAILABLE',
+        )
+      }
+    } else {
+      if (currentProperty?.status === 'rented') throw rentedError()
+      throw new AppError(
+        'This property is no longer available for new rental applications.',
+        409,
+        'PROPERTY_NOT_AVAILABLE',
+      )
+    }
+  }
 
   if (property.owner) {
     await Notification.create({
@@ -157,61 +195,54 @@ export const updateRequestStatus = asyncHandler(async (req, res) => {
     throw new AppError('Only an administrator can approve or decline rental requests', 403)
   }
 
+  if (status === 'approved') {
+    const approved = await approveRentalRequestById(id)
+    await Notification.create({
+      user: approved.tenant,
+      type: 'request',
+      title: 'Application status updated',
+      body: 'Your rental request has been approved by Admin.',
+      property: approved.property,
+      actor: req.user.id,
+    })
+    const data = await populateProps(RentalRequest.findById(approved._id))
+    return res.status(200).json({ success: true, data })
+  }
+
   const request = await RentalRequest.findById(id).populate('property', 'title owner price status')
   if (!request) {
     throw new AppError('Request not found', 404)
   }
-
-  request.status = status
-  if (status === 'rejected') {
-    request.rejectionReason = String(req.body.reason || '').trim().slice(0, 1000)
-  } else if (status === 'approved') {
-    request.rejectionReason = ''
+  if (request.status !== 'pending') {
+    throw new AppError(`This rental request has already been ${request.status}`, 409)
   }
-  await request.save()
+
+  const rejectionReason =
+    status === 'rejected' ? String(req.body.reason || '').trim().slice(0, 1000) : ''
+  const updatedRequest = await RentalRequest.findOneAndUpdate(
+    { _id: id, status: 'pending' },
+    { $set: { status, rejectionReason } },
+    { new: true },
+  ).populate('property', 'title owner price status')
+  if (!updatedRequest) {
+    throw new AppError('This rental request has already been decided.', 409)
+  }
 
   const decisionBody =
-    status === 'approved'
-      ? 'Your rental request has been approved by Admin.'
-      : status === 'rejected'
-        ? request.rejectionReason
-          ? `Your rental request has been declined by Admin. Reason: ${request.rejectionReason}`
-          : 'Your rental request has been declined by Admin.'
-        : `Your application for "${request.property?.title || 'a property'}" was ${status}.`
+    status === 'rejected'
+      ? updatedRequest.rejectionReason
+        ? `Your rental request has been declined by Admin. Reason: ${updatedRequest.rejectionReason}`
+        : 'Your rental request has been declined by Admin.'
+      : `Your application for "${updatedRequest.property?.title || 'a property'}" was ${status}.`
   await Notification.create({
-    user: request.tenant,
+    user: updatedRequest.tenant,
     type: 'request',
     title: 'Application status updated',
     body: decisionBody,
-    property: request.property?._id || null,
+    property: updatedRequest.property?._id || null,
     actor: req.user.id,
   })
 
-  if (status === 'approved' && request.property) {
-    // 1. Move the property into PENDING — a rental process is now active.
-    await Property.findByIdAndUpdate(request.property._id, { status: 'pending' })
-
-    // 2. Create a draft agreement if it does not already exist.
-    //    The property is marked RENTED once the owner activates the agreement.
-    const existingAgreement = await RentalAgreement.findOne({ application: request._id })
-    if (!existingAgreement) {
-      const today = new Date()
-      const oneYearLater = new Date(today)
-      oneYearLater.setFullYear(today.getFullYear() + 1)
-
-      await RentalAgreement.create({
-        property: request.property._id,
-        owner: request.property.owner,
-        tenant: request.tenant,
-        application: request._id,
-        monthlyRent: request.property.price,
-        startDate: request.startDate || request.moveInDate || today.toISOString().split('T')[0],
-        endDate: request.endDate || oneYearLater.toISOString().split('T')[0],
-        status: 'draft',
-      })
-    }
-  }
-
-  const data = await populateProps(RentalRequest.findById(request.id))
+  const data = await populateProps(RentalRequest.findById(updatedRequest.id))
   res.status(200).json({ success: true, data })
 })

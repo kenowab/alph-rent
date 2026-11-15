@@ -1,4 +1,4 @@
-# Alpha Rent Ethiopia
+# Alpha Rental Platform
 
 A fullstack property rental marketplace for Ethiopia — houses, apartments, villas, offices,
 land and more — built with **React + Vite + Tailwind CSS** (frontend) and
@@ -87,6 +87,31 @@ backend/
   utils/            # token, asyncHandler, AppError, city normalization
   seed.js           # demo data seeder
 ```
+
+## Rental availability and approvals
+
+Submitting an application creates a pending rental request without reserving or
+changing the property's availability. An administrator's approval atomically
+claims an available, approved property, approves the request, and creates its
+active rental agreement. A property with an active agreement is protected by a
+unique partial MongoDB index, and each rental request can have only one agreement.
+Replica-set deployments use transactions, with an atomic property claim and
+rollback as a fallback on standalone MongoDB.
+
+Administrators can review all agreements from the Admin > Rental Agreements
+page. Tenants and owners see only agreements linked to their own account in
+their dashboard, and agreement details are checked against the signed-in user
+on the backend.
+
+Cancelling, completing, or expiring an agreement returns the property to
+available only when no other active agreement or approved rental reservation
+exists. Expired agreements are reconciled when availability, property, or
+agreement listings are read.
+
+Run backend checks with `cd backend && npm test`. Before deploying the unique
+agreement indexes, inspect existing records for duplicate active agreements per
+property and duplicate agreements per rental request, and resolve any duplicates.
+MongoDB builds the indexes automatically through Mongoose `autoIndex`.
 
 ## Architecture
 

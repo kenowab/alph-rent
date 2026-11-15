@@ -73,6 +73,13 @@ export default function AdminDashboardPage() {
         { icon: 'x-circle', label: 'Rejected Rentals', value: stats.rejectedRentals, style: 'violet' },
       ],
     },
+    {
+      heading: 'Rental agreements',
+      cards: [
+        { icon: 'key', label: 'Total Agreements', value: stats.totalAgreements, style: 'blue' },
+        { icon: 'check-circle', label: 'Active Agreements', value: stats.activeAgreements, style: 'green' },
+      ],
+    },
   ]
 
   return (
@@ -132,6 +139,44 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary-50 text-primary-600 transition group-hover:scale-105 dark:bg-slate-800 dark:text-primary-400">
+              <span className="text-2xl font-extrabold">→</span>
+            </span>
+          </Link>
+          <Link
+            to="/admin/agreements"
+            className="group flex items-center justify-between rounded-2xl border border-emerald-200 bg-white p-6 shadow-card transition hover:shadow-card-hover dark:border-emerald-900 dark:bg-slate-900"
+          >
+            <div>
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                {stats.activeAgreements} active
+              </p>
+              <h3 className="mt-1 text-lg font-extrabold text-slate-900 dark:text-white">
+                Rental agreements
+              </h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Review tenants, owners, property details, and agreement terms.
+              </p>
+            </div>
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-600 transition group-hover:scale-105 dark:bg-slate-800 dark:text-emerald-400">
+              <span className="text-2xl font-extrabold">→</span>
+            </span>
+          </Link>
+          <Link
+            to="/admin/expirations"
+            className="group flex items-center justify-between rounded-2xl border border-amber-200 bg-white p-6 shadow-card transition hover:shadow-card-hover dark:border-amber-900 dark:bg-slate-900"
+          >
+            <div>
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                Admin review required
+              </p>
+              <h3 className="mt-1 text-lg font-extrabold text-slate-900 dark:text-white">
+                Rental Expiration Management
+              </h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Review rental end dates, record expirations, and decide property readiness.
+              </p>
+            </div>
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-amber-50 text-amber-600 transition group-hover:scale-105 dark:bg-slate-800 dark:text-amber-400">
               <span className="text-2xl font-extrabold">→</span>
             </span>
           </Link>

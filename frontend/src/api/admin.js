@@ -34,6 +34,24 @@ export async function fetchAdminPendingProperties() {
   return { data: body.data || [] }
 }
 
+export async function fetchAdminRentalExpirations() {
+  const body = await apiClient('/admin/expirations')
+  return { data: body.data || [] }
+}
+
+export async function markAdminAgreementExpired(id) {
+  const body = await apiClient(`/admin/agreements/${id}/expire`, { method: 'PUT' })
+  return { data: body.data }
+}
+
+export async function setExpiredAgreementPropertyAvailability(id, status) {
+  const body = await apiClient(`/admin/agreements/${id}/property-availability`, {
+    method: 'PUT',
+    body: { status },
+  })
+  return { data: body.data }
+}
+
 export async function approveProperty(id) {
   const body = await apiClient(`/admin/properties/${id}/approve`, { method: 'PUT' })
   return { data: body.data }

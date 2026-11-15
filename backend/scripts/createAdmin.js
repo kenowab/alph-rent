@@ -58,6 +58,15 @@ async function main() {
     console.log(`Admin created: ${email}`)
   }
 
+  // Enforce single admin policy: ensure no other user retains admin privileges
+  const extraAdmins = await User.updateMany(
+    { role: 'admin', email: { $ne: email } },
+    { $set: { role: 'tenant' } },
+  )
+  if (extraAdmins.modifiedCount > 0) {
+    console.log(`Demoted ${extraAdmins.modifiedCount} extra admin account(s) to tenant (enforcing single admin policy)`)
+  }
+
   // Data migration: keep existing live listings visible to tenants by treating
   // them as approved. New owner-created properties default to 'pending'.
   const backfill = await Property.updateMany(
