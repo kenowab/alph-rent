@@ -31,7 +31,7 @@ There are no demo tenant/owner accounts. Every user must register their own acco
 
 | Role  | Email                | Password    |
 | ----- | -------------------- | ----------- |
-| Admin | admin@alpharent.com  | admin1234   |
+| Admin | admin@alpharent.com  |  |
 
 ## Pages
 
